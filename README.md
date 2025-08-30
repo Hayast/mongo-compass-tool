@@ -58,7 +58,7 @@
 
 1. **下载项目**
    ```bash
-   git clone https://github.com/your-username/mongo-compass-tool.git
+   git clone https://github.com/Hayast/mongo-compass-tool.git
    cd mongo-compass-tool
    ```
 
@@ -265,9 +265,9 @@ mongo/
 
 ## 📞 联系方式
 
-- 项目主页: [GitHub Repository](https://github.com/your-username/mongo-compass-tool)
-- 问题反馈: [Issues](https://github.com/your-username/mongo-compass-tool/issues)
-- 功能建议: [Discussions](https://github.com/your-username/mongo-compass-tool/discussions)
+- 项目主页: [GitHub Repository](https://github.com/Hayast/mongo-compass-tool)
+- 问题反馈: [Issues](https://github.com/Hayast/mongo-compass-tool/issues)
+- 功能建议: [Discussions](https://github.com/Hayast/mongo-compass-tool/discussions)
 
 ---
 
