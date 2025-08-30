@@ -1,0 +1,117 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET Framework
+      uses: microsoft/setup-dotnet@v3
+      with:
+        dotnet-version: '4.8.x'
+
+    - name: Restore dependencies
+      run: |
+        nuget restore mongo.sln
+        msbuild mongo.sln /t:Restore
+
+    - name: Build
+      run: msbuild mongo.sln /p:Configuration=Release /p:Platform="Any CPU" /verbosity:minimal
+
+    - name: Test
+      run: |
+        # Add test commands here when tests are available
+        echo "Tests will be added in future versions"
+
+    - name: Create Release Assets
+      if: github.event_name == 'release'
+      run: |
+        # Create release directory
+        mkdir release
+        
+        # Copy executable and dependencies
+        copy "bin\Release\mongo.exe" "release\"
+        copy "bin\Release\*.dll" "release\"
+        copy "bin\Release\*.config" "release\"
+        
+        # Copy language files
+        xcopy "language" "release\language\" /E /I /Y
+        
+        # Copy documentation
+        copy "README.md" "release\"
+        copy "LICENSE" "release\"
+        copy "CHANGELOG.md" "release\"
+        
+        # Create zip file
+        powershell Compress-Archive -Path "release\*" -DestinationPath "MongoDB-Compass-Tool-v${{ github.event.release.tag_name }}.zip"
+
+    - name: Upload Release Assets
+      if: github.event_name == 'release'
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: ./MongoDB-Compass-Tool-v${{ github.event.release.tag_name }}.zip
+        asset_name: MongoDB-Compass-Tool-v${{ github.event.release.tag_name }}.zip
+        asset_content_type: application/zip
+
+  build-info:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'release'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Generate Release Notes
+      run: |
+        echo "## 🎉 Release v${{ github.event.release.tag_name }}" >> release-notes.md
+        echo "" >> release-notes.md
+        echo "### 📦 What's New" >> release-notes.md
+        echo "- MongoDB Compass类似工具 v${{ github.event.release.tag_name }}" >> release-notes.md
+        echo "- 完整的MongoDB数据库管理功能" >> release-notes.md
+        echo "- 支持多语言界面" >> release-notes.md
+        echo "- 现代化的用户界面设计" >> release-notes.md
+        echo "" >> release-notes.md
+        echo "### 🚀 Features" >> release-notes.md
+        echo "- 🔗 数据库连接管理" >> release-notes.md
+        echo "- 📊 数据查询和显示" >> release-notes.md
+        echo "- 🛠️ 完整的CRUD操作" >> release-notes.md
+        echo "- 📁 数据导入导出" >> release-notes.md
+        echo "- 🔍 索引管理" >> release-notes.md
+        echo "- 🌐 多语言支持" >> release-notes.md
+        echo "" >> release-notes.md
+        echo "### 📋 System Requirements" >> release-notes.md
+        echo "- Windows 7/8/10/11" >> release-notes.md
+        echo "- .NET Framework 4.8" >> release-notes.md
+        echo "- MongoDB服务器（本地或远程）" >> release-notes.md
+        echo "" >> release-notes.md
+        echo "### 📥 Download" >> release-notes.md
+        echo "Download the latest release from the [Releases page](https://github.com/${{ github.repository }}/releases)." >> release-notes.md
+
+    - name: Update Release Description
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const releaseNotes = fs.readFileSync('release-notes.md', 'utf8');
+          
+          await github.rest.repos.updateRelease({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            release_id: ${{ github.event.release.id }},
+            body: releaseNotes
+          }); 
